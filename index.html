@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Surprise for You 💖</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Floating Hearts */
+    .heart{
+      position:absolute;
+      width:36px;
+      height:36px;
+      transform:rotate(-45deg);
+      left:50%;
+      top:50%;
+      pointer-events:none;
+      animation:floatUp linear forwards;
+      opacity:0.9;
+    }
+    .heart:before,.heart:after{
+      content:"";
+      position:absolute;
+      width:36px;height:36px;
+      background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 30%), linear-gradient(135deg,#ff6b9a,#ff3d7f);
+      border-radius:50%;
+    }
+    .heart:before{top:-18px;left:0;}
+    .heart:after{left:18px;top:0;}
+    @keyframes floatUp{
+      from{transform:translate(-50%,0) scale(0.6) rotate(-45deg);opacity:1;}
+      to{transform:translate(-50%,-380px) scale(1) rotate(-45deg);opacity:0;}
+    }
+
+    /* Glass effect behind modal */
+    .glass{
+      backdrop-filter:blur(6px) saturate(110%);
+      background-color:rgba(255,255,255,0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-pink-50 via-white to-indigo-50 font-sans flex items-center justify-center p-6">
+
+<!-- Container -->
+<div class="w-full max-w-4xl mx-auto">
+
+  <!-- Header / Card -->
+  <div class="bg-white rounded-3xl shadow-2xl p-8 relative overflow-hidden">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-rose-600">For You, my love 💖</h1>
+        <p class="mt-2 text-slate-600">กดปุ่มด้านล่างเพื่อรับเซอร์ไพรส์นะ 😉</p>
+      </div>
+      <div class="text-right">
+        <button id="openBtn" class="px-4 py-2 bg-rose-500 hover:bg-rose-400 text-white rounded-lg shadow">Surprise!</button>
+      </div>
+    </div>
+
+    <!-- Slideshow -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="col-span-2 rounded-xl overflow-hidden">
+        <div id="slide" class="h-64 bg-center bg-cover rounded-xl shadow-md"></div>
+      </div>
+      <div class="rounded-xl p-4 glass">
+        <h3 class="font-semibold text-slate-700">รักนะ</h3>
+        <p class="mt-3 text-slate-600" id="shortText">พี่ทำในสิ่งที่พี่ทำได้ ไว้ให้หนูนะ — หวังว่าจะชอบนะ</p>
+        <div class="mt-4">
+          <input id="nameInput" placeholder="พิมพ์ชื่อที่นี่ (เช่น น้องสมอย)" class="w-full p-2 rounded-lg border" />
+          <button id="saveName" class="mt-3 w-full px-3 py-2 bg-indigo-600 text-white rounded-lg">บันทึกชื่อ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center gap-3 text-sm text-slate-500">
+      <svg class="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6.716-4.35-9.538-7.14C-.401 10.874 2.22 3.75 7.5 4.75c2.405.5 3.5 2.21 4.5 3.5 1-1.29 2.095-3.0 4.5-3.5 5.28-1.0 7.901 6.124 4.038 9.11C18.716 16.65 12 21 12 21z"/></svg>
+      ทำโดยคนที่รักคุณมาก
+    </div>
+  </div>
+
+  <!-- footer small -->
+  <div class="mt-6 text-center text-slate-500">เปิดแล้วกด <strong>Surprise!</strong> เพื่อเริ่ม</div>
+</div>
+
+<!-- Modal / Postcard -->
+<div id="modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+  <div class="absolute inset-0 bg-black/50"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-96 max-w-[90%] p-6 animate-[popIn_0.4s_ease] text-center">
+    <h2 id="modalTitle" class="text-2xl font-bold text-rose-600 text-center">💌 เซอร์ไพรส์!</h2>
+    <p id="modalMessage" class="mt-4 text-slate-700 text-center">คุณคือคนที่ทำให้โลกสดใสขึ้นทุกวัน 🌸</p>
+    <div class="mt-6 flex justify-center gap-3">
+      <button id="playMore" class="px-4 py-2 bg-rose-500 text-white rounded-lg">ดูต่อ</button>
+      <button id="closeModal" class="px-4 py-2 border rounded-lg">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Audio -->
+<audio id="bgMusic" src="https://cdn.discordapp.com/attachments/898073383101661196/1422626580630339796/calm-bird-117017.mp3?ex=68dd5bbf&is=68dc0a3f&hm=a022c6f51e60d5b1e04c6c2456f1d7c2952cd8dae0f879784b0a9aaa04bcaea8&" preload="auto"></audio>  
+
+<script>
+  // Photos for slideshow
+  const photos = [
+    'https://cdn.discordapp.com/attachments/898073383101661196/1422469530185240668/IMG_4628.jpg?ex=68dcc97c&is=68db77fc&hm=244b619ff38e04fe227810b15a12506be1c044b63103fca46e805d4d11aadec7',
+    'https://cdn.discordapp.com/attachments/898073383101661196/1422616491614011412/D3B04A21-DBEB-40F6-85C4-381CA5441A0B.jpg?ex=68dd525a&is=68dc00da&hm=073bab4e450c23e95433046b7cefecd086b5074e1708da772b504266151e516f&',
+    'https://media.discordapp.net/attachments/898073383101661196/1422469529463689246/IMG_4626.jpg?ex=68dcc97c&is=68db77fc&hm=142285820245b673e0e52517a9523c010a77777db0ca4e801dc6ed9c84ead8f4&format=webp&width=642&height=856'
+  ];
+
+  const slide = document.getElementById('slide');
+  let idx = 0;
+  function showSlide(i){
+    slide.style.backgroundImage = `url('${photos[i % photos.length]}')`;
+    slide.style.backgroundSize = 'cover';
+    slide.style.backgroundPosition = 'center';
+  }
+  showSlide(0);
+  setInterval(()=>{
+    idx=(idx+1)%photos.length;
+    showSlide(idx);
+  },4000);
+
+  // Floating hearts
+  function makeHeart(){
+    const heart = document.createElement('div');
+    heart.className='heart';
+    heart.style.left=Math.random()*80+10+'%';
+    heart.style.top='85%';
+    const size=Math.random()*24+24;
+    heart.style.width=size+'px';
+    heart.style.height=size+'px';
+    heart.style.animationDuration=(3+Math.random()*2)+'s';
+    document.body.appendChild(heart);
+    setTimeout(()=>heart.remove(),6000);
+  }
+  setInterval(makeHeart,900);
+
+  // Confetti
+  function bigConfetti(){
+    confetti({particleCount:120, spread:120, origin:{y:0.6}});
+    confetti({particleCount:60, spread:60, origin:{y:0.6}});
+  }
+
+  // Modal & Messages
+  const modal = document.getElementById("modal");
+  const modalMessage = document.getElementById("modalMessage");
+  const openBtn = document.getElementById("openBtn");
+  const playMore = document.getElementById("playMore");
+  const closeModal = document.getElementById("closeModal");
+  const bgMusic = document.getElementById("bgMusic");
+
+  const messagesSeq = [
+    "ก๊อกๆ สวัสดีครับ 🙂",
+    "วันนี้วันอะไรเอ่ย? 💖",
+    "ก่อนอื่นเลยยิ้มรึยัง? 🌸",
+    "แต่ว่า 🌸",
+    "อันนี้ตั้งใจทำให้จริงๆ จะอ่านจนจบมั้ยนะ 🌸",
+    "อืมม พิมทีเดียวเลยดีกว่า ตอนนี้ หนูหลับไปแล้วอะ 🌸",
+    "จะบอกว่าสุขสันต์วันครบรอบ 1 เดือน  ฮ่าๆ  🌸",
+    "ดีใจมั้ยๆ พี่ดีใจแต่อยากอยู่กันนานๆอะ 🌸",
+    "อยากให้รู้ว่าตัวเองดีพอใช้ชีวิตให้ดี 🌸",
+    "พอแล้วมันยาวไปความหมายเท่าเดิม 🌸",
+    "ไม่ว่ามีปัญหาอะไรเข้ามา การที่มายด์ชมตัวเองได้ว่าเก่งแสดงว่ามายด์เก่งจริงๆ 🌸",
+    "ขอให้เก่งแบบนี้ ตอนไม่มีพี่นะ 🌸",
+    "ตอนมีพี่ให้พี่ดูแลเรานะครับ รักนะสมายด์ 🌸",
+    "รักสมายด์ที่สุดเลยนะ 💕",
+    "ขอบคุณที่เข้ามาในชีวิต ขอบคุณที่ใจเย็น ขอบคุณทุกอย่างจริงๆ พี่รักหนู ขอบคุณครับ 💕"
+  ];
+  let msgIndex=0;
+
+  function openModalFunc(){
+    msgIndex=0;
+    modalMessage.textContent=messagesSeq[msgIndex];
+    modal.classList.remove("hidden");
+    bigConfetti();
+    for(let i=0;i<6;i++) setTimeout(makeHeart,i*180);
+
+    if(bgMusic && bgMusic.src){
+      bgMusic.currentTime=0;
+      bgMusic.play().catch(()=>{});
+    }
+  }
+
+  openBtn.addEventListener("click",openModalFunc);
+
+  playMore.addEventListener("click",()=>{
+    msgIndex++;
+    if(msgIndex<messagesSeq.length){
+      modalMessage.textContent=messagesSeq[msgIndex];
+      bigConfetti();
+    }else{
+      modalMessage.textContent="🎉 จบแล้วครับ รักคุณนะ 💖";
+      playMore.disabled=true;
+      playMore.classList.add("opacity-50","cursor-not-allowed");
+    }
+  });
+
+  closeModal.addEventListener("click",()=>{
+    modal.classList.add("hidden");
+    msgIndex=0;
+    playMore.disabled=false;
+    playMore.classList.remove("opacity-50","cursor-not-allowed");
+    if(bgMusic) bgMusic.pause();
+  });
+</script>
+
+</body>
+</html>
